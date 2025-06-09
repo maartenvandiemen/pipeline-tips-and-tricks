@@ -47,23 +47,9 @@ jobs:
       version: '$(DOTNET_VERSION)'
       includePreviewVersions: false
 
-  - task: Cache@2
-    displayName: 'Restore cache for NuGet'
-    inputs:
-      key: 'nuget | "$(Agent.OS)" | **/packages.lock.json,!**/bin/**,!**/obj/**'
-      path: '$(NUGET_PACKAGES)'
-
-  - task: DotNetCoreCLI@2
-    displayName: Dotnet restore '**/*.csproj'
-    inputs:
-      command: 'restore'
-      projects: '**/*.csproj'
-      restoreArguments: '--locked-mode'
-      feedsToUse: 'select'
-
   - task: DotNetCoreCLI@2
     displayName: Dotnet build
     inputs:
       command: 'build'
       projects: '**/*.csproj'
-      arguments: '--no-restore --configuration Release'
+      arguments: '--configuration Release'
