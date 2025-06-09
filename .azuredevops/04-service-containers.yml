@@ -51,12 +51,6 @@ jobs:
       sqlcmd -?
     displayName: 'Install and verify sqlcmd on Ubuntu'
 
-  - task: UseDotNet@2
-    inputs:
-      packageType: 'sdk'
-      version: '${{variables.DOTNET_VERSION}}.x'
-      includePreviewVersions: false
-
   - task: DotNetCoreCLI@2
     displayName: Dotnet restore '**/*.csproj'
     inputs:
@@ -93,8 +87,8 @@ jobs:
       ASPNETCORE_ENVIRONMENT: 'DUMMY'
 
   - script: |
-        sqlcmd -S mssql,1433 -U SA -P '$(SA_PASSWORD)' -Q 'CREATE DATABASE TodoItemsDB' -b
-        sqlcmd -S mssql,1433 -U SA -P '$(SA_PASSWORD)' -i db.sql -d TodoItemsDB -b
+        sqlcmd -S 127.0.0.1,1433 -U SA -P '$(SA_PASSWORD)' -Q 'CREATE DATABASE TodoItemsDB' -b
+        sqlcmd -S 127.0.0.1,1433 -U SA -P '$(SA_PASSWORD)' -i db.sql -d TodoItemsDB -b
     workingDirectory: '$(Build.ArtifactStagingDirectory)/SQL'
     displayName: 'Create database and tables for unit tests'
     timeoutInMinutes: 1
@@ -106,4 +100,4 @@ jobs:
       projects: '**/*Tests.csproj'
       arguments: '--no-build --nologo --configuration Release'
     env:
-      integrationtests_ConnectionStrings__TodoDb: 'Server=mssql,1433;Database=TodoItemsDB;User Id=SA;Password=$(SA_PASSWORD);TrustServerCertificate=true;'
+      integrationtests_ConnectionStrings__TodoDb: 'Server=127.0.0.1,1433;Database=TodoItemsDB;User Id=SA;Password=$(SA_PASSWORD);TrustServerCertificate=true;'
