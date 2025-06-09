@@ -1,0 +1,40 @@
+trigger: none
+
+jobs: 
+- job: Build
+  container: mcr.microsoft.com/dotnet/sdk:9.0
+  pool:
+    vmImage: ubuntu-24.04
+  variables:
+  - name: DOTNET_NOLOGO
+    value: true
+    readonly: true
+  - name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE 
+    value: true
+    readonly: true
+    #Override to create env variable to have control where the global packages are stored for caching: https://learn.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
+  - name: NUGET_PACKAGES
+    value: '$(Pipeline.Workspace)/.nuget/packages/'
+    readonly: true
+       
+  steps:
+  - task: Cache@2
+    displayName: 'Restore cache for NuGet'
+    inputs:
+      key: 'nuget | "$(Agent.OS)" | **/packages.lock.json,!**/bin/**,!**/obj/**'
+      path: '$(NUGET_PACKAGES)'
+
+  - task: DotNetCoreCLI@2
+    displayName: Dotnet restore '**/*.csproj'
+    inputs:
+      command: 'restore'
+      projects: '**/*.csproj'
+      restoreArguments: '--locked-mode'
+      feedsToUse: 'select'
+
+  - task: DotNetCoreCLI@2
+    displayName: Dotnet build
+    inputs:
+      command: 'build'
+      projects: '**/*.csproj'
+      arguments: '--no-restore --configuration Release'
