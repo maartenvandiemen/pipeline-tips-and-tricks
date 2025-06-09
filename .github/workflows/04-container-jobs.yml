@@ -1,0 +1,23 @@
+
+name: 04-Container-jobs
+on: 
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build:
+    container: mcr.microsoft.com/dotnet/sdk:9.0
+    runs-on: ubuntu-24.04
+    env:
+      NUGET_PACKAGES: '${{github.workspace}}/.nuget/packages'
+    steps:    
+    - uses: actions/checkout@v4
+
+    - name: Dotnet restore
+      run: dotnet restore --locked-mode --nologo
+    
+    - name: Dotnet build
+      run: dotnet build --no-restore --configuration Release

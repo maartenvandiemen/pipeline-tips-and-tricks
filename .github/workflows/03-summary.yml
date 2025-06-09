@@ -1,0 +1,62 @@
+name: 03-Summary
+on: 
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      NUGET_PACKAGES: '${{github.workspace}}/.nuget/packages'
+    steps:    
+    - uses: actions/checkout@v4
+
+    - name: Retrieve version
+      id: set-dotnet-version
+      run: |
+            # URL to the .NET release metadata
+            $releasesUrl = "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json"
+              
+            # Fetch and parse the JSON data
+            $releasesData = Invoke-RestMethod -Uri $releasesUrl -UseBasicParsing
+              
+            # Filter for .NET 9 releases and get the latest version
+            $dotNet9 = $releasesData."releases-index" | Where-Object { $_."channel-version" -like "9.0" }
+            $latestNet9Sdk = $dotNet9."latest-sdk"
+
+            # Output the latest information about .NET 9
+            Write-Output "Latest .NET 9 SDK: $latestNet9Sdk"
+            echo "DOTNET_VERSION=$latestNet9Sdk" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+      shell: pwsh
+
+    - name: Generate list using Markdown
+      run: |
+        echo "Built using the following dynamic versions:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- .NET SDK: ${{steps.set-dotnet-version.outputs.DOTNET_VERSION}}" >> $GITHUB_STEP_SUMMARY
+      shell: bash
+      
+    - name: Restore cache
+      uses: actions/cache@v4
+      with:
+        path: /usr/share/dotnet
+        key: ${{runner.os}}-${{ steps.set-dotnet-version.outputs.DOTNET_VERSION }}
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ steps.set-dotnet-version.outputs.DOTNET_VERSION }}
+        
+    - name: Restore cache
+      uses: actions/cache@v4
+      with:
+        path: ${{env.NUGET_PACKAGES}}
+        key: ${{runner.os}}-build-${{ hashFiles('**/packages.lock.json', '!**/bin/**', '!**/obj/**') }}        
+
+    - name: Dotnet restore
+      run: dotnet restore --locked-mode --nologo
+    
+    - name: Dotnet build
+      run: dotnet build --no-restore --configuration Release
