@@ -1,0 +1,68 @@
+trigger: none
+
+jobs: 
+- job: Build
+  pool:
+    vmImage: ubuntu-24.04
+  variables:
+  - name: DOTNET_NOLOGO
+    value: true
+    readonly: true
+  - name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE 
+    value: true
+    readonly: true
+    #Override to create env variable to have control where the global packages are stored for caching: https://learn.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
+  - name: NUGET_PACKAGES
+    value: '$(Pipeline.Workspace)/.nuget/packages/'
+    readonly: true
+       
+  steps:
+  - task: PowerShell@2
+    inputs:
+      targetType: 'inline'
+      script: |
+              # URL to the .NET release metadata
+              $releasesUrl = "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json"
+              
+              # Fetch and parse the JSON data
+              $releasesData = Invoke-RestMethod -Uri $releasesUrl -UseBasicParsing
+              
+              # Filter for .NET 9 releases and get the latest version
+              $dotNet9 = $releasesData."releases-index" | Where-Object { $_."channel-version" -like "9.0" }
+              $latestNet9Sdk = $dotNet9."latest-sdk"
+
+              # Output the latest information about .NET 9
+              Write-Output "Latest .NET 9 SDK: $latestNet9Sdk"
+              Write-Host "##vso[task.setvariable variable=DOTNET_VERSION;]$latestNet9Sdk"
+
+  - script: |
+            echo "Built using the following dynamic versions:" >> dynamic-versions.md
+            echo "" >> dynamic-versions.md
+            echo "- .NET SDK: $(DOTNET_VERSION)" >> dynamic-versions.md
+    displayName: Generate list using Markdown
+
+  - script: |
+      echo "##vso[task.addattachment type=Distributedtask.Core.Summary;name=Versions used;]$(Build.SourcesDirectory)/dynamic-versions.md"
+    displayName: Attach Markdown to Build Summary
+
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '$(DOTNET_VERSION)'
+      includePreviewVersions: false
+
+  - task: DotNetCoreCLI@2
+    displayName: Dotnet restore '**/*.csproj'
+    inputs:
+      command: 'restore'
+      projects: '**/*.csproj'
+      restoreArguments: '--locked-mode'
+      feedsToUse: 'select'
+      verbosityRestore: 'Minimal'
+
+  - task: DotNetCoreCLI@2
+    displayName: Dotnet build
+    inputs:
+      command: 'build'
+      projects: '**/*.csproj'
+      arguments: '--no-restore --configuration Release'
