@@ -46,6 +46,7 @@ jobs:
       packageType: 'sdk'
       version: '$(DOTNET_VERSION)'
       includePreviewVersions: false
+      verbosityRestore: 'Minimal'
 
   - task: DotNetCoreCLI@2
     displayName: Dotnet build

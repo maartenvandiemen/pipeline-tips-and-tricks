@@ -31,6 +31,7 @@ jobs:
       projects: '**/*.csproj'
       restoreArguments: '--locked-mode'
       feedsToUse: 'select'
+      verbosityRestore: 'Minimal'
 
   - task: DotNetCoreCLI@2
     displayName: Dotnet build
