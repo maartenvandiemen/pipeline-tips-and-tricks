@@ -38,22 +38,10 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "- .NET SDK: ${{steps.set-dotnet-version.outputs.DOTNET_VERSION}}" >> $GITHUB_STEP_SUMMARY
       shell: bash
-      
-    - name: Restore cache
-      uses: actions/cache@v4
-      with:
-        path: /usr/share/dotnet
-        key: ${{runner.os}}-${{ steps.set-dotnet-version.outputs.DOTNET_VERSION }}
 
     - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ steps.set-dotnet-version.outputs.DOTNET_VERSION }}
-        
-    - name: Restore cache
-      uses: actions/cache@v4
-      with:
-        path: ${{env.NUGET_PACKAGES}}
-        key: ${{runner.os}}-build-${{ hashFiles('**/packages.lock.json', '!**/bin/**', '!**/obj/**') }}        
 
     - name: Dotnet restore
       run: dotnet restore --locked-mode --nologo
