@@ -46,6 +46,21 @@ jobs:
       packageType: 'sdk'
       version: '$(DOTNET_VERSION)'
       includePreviewVersions: false
+
+  - task: Cache@2
+    displayName: 'Restore cache for NuGet'
+    inputs:
+      key: 'nuget | "$(Agent.OS)" | **/packages.lock.json,!**/bin/**,!**/obj/**'
+      path: '$(NUGET_PACKAGES)'
+
+  - task: DotNetCoreCLI@2
+    displayName: Dotnet restore '**/*.csproj'
+    condition: and(succeeded(), ne(variables['NUGET_CACHE_RESTORED'], 'true'))
+    inputs:
+      command: 'restore'
+      projects: '**/*.csproj'
+      restoreArguments: '--locked-mode'
+      feedsToUse: 'select'
       verbosityRestore: 'Minimal'
 
   - task: DotNetCoreCLI@2
