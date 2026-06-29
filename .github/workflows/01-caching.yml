@@ -6,12 +6,22 @@ defaults:
   run:
     shell: pwsh
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       NUGET_PACKAGES: '${{github.workspace}}/.nuget/packages'
     steps:    
+    - uses: actions/checkout@v7
+
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.x
+        dotnet-quality: 'ga'
+
     - name: Restore cache
       uses: actions/cache@v6
       with:
