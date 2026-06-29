@@ -79,13 +79,13 @@ jobs:
       uses: actions/attest@v4
       with:
         subject-name:   todoItemsApi
-        subject-digest: ${{ steps.upload-api.outputs.artifact-digest }}
+        subject-digest: sha256:${{ steps.upload-api.outputs.artifact-digest }}
  
     - name: Attest SQL migration script
       uses: actions/attest@v4
       with:
         subject-name:   db-migration-script
-        subject-digest: ${{ steps.upload-sql.outputs.artifact-digest }}
+        subject-digest: sha256:${{ steps.upload-sql.outputs.artifact-digest }}
  
   deploy:
     needs: build
