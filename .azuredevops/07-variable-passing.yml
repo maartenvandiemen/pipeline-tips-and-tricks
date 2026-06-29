@@ -13,7 +13,7 @@ stages:
         displayName: Setup NuGet
         steps:
           - pwsh: |
-              $nugetPath = "$(Build.SourcesDirectory)/.nuget/packages"
+              $nugetPath = "$(Build.SourcesDirectory)/.nuget/packagezzz"
               Write-Host "##vso[task.setvariable variable=NUGET;isOutput=true]$nugetPath"
             name: setupNuget
             displayName: Setup NuGet Path
