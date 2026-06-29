@@ -97,29 +97,49 @@ jobs:
       contents: read
  
     steps:
+    # Download with skip-decompress so the ZIP stays intact for verification.
+    # The artifact lands at <path>/<artifact-name>.zip
     - name: Download API artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         name: todoItemsApi
-        path: '${{github.workspace}}/artifacts/TodoItems.Api'
+        path: '${{github.workspace}}/artifacts'
+        skip-decompress: true
  
     - name: Download SQL migration artifact
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@v4
       with:
         name: db-migration-script
-        path: '${{github.workspace}}/artifacts/SQL'
+        path: '${{github.workspace}}/artifacts'
+        skip-decompress: true
+ 
+    # ── Verify attestations before deploying ──────────────────────────────────
  
     - name: Verify API artifact attestation
       env:
         GH_TOKEN: ${{ github.token }}
-      run: gh attestation verify '${{github.workspace}}/artifacts/TodoItems.Api/todoItemsApi.zip' --owner ${{ github.repository_owner }}
+      run: |
+        gh attestation verify '${{github.workspace}}/artifacts/todoItemsApi.zip' `
+          --owner ${{ github.repository_owner }}
       shell: pwsh
  
     - name: Verify SQL migration attestation
       env:
         GH_TOKEN: ${{ github.token }}
-      run: gh attestation verify '${{github.workspace}}/artifacts/SQL/db.sql' --owner ${{ github.repository_owner }}
+      run: |
+        gh attestation verify '${{github.workspace}}/artifacts/db-migration-script.zip' `
+          --owner ${{ github.repository_owner }}
       shell: pwsh
+ 
+    # ── Extract after verification ─────────────────────────────────────────────
+ 
+    - name: Extract API artifact
+      run: Expand-Archive '${{github.workspace}}/artifacts/todoItemsApi.zip' -DestinationPath '${{github.workspace}}/artifacts/TodoItems.Api'
+ 
+    - name: Extract SQL migration artifact
+      run: Expand-Archive '${{github.workspace}}/artifacts/db-migration-script.zip' -DestinationPath '${{github.workspace}}/artifacts/SQL'
+ 
+    # ── Deploy ─────────────────────────────────────────────────────────────────
  
     - name: Deploy API
       run: Write-Output "Deploying todoItemsApi..."
