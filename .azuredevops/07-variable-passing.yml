@@ -28,7 +28,7 @@ stages:
         displayName: Build .NET Project
         steps:
           - checkout: self
-
+          - pwsh: $(NUGET_PACKAGES)
           - task: UseDotNet@2
             displayName: Setup .NET SDK
             inputs:
