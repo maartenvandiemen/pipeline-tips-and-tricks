@@ -97,17 +97,17 @@ jobs:
       contents: read
  
     steps:
-    # Download with skip-decompress so the ZIP stays intact for verification.
+    # download-artifact@v8 supports skip-decompress; v4 ignores it silently.
     # The artifact lands at <path>/<artifact-name>.zip
     - name: Download API artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: todoItemsApi
         path: '${{github.workspace}}/artifacts'
         skip-decompress: true
  
     - name: Download SQL migration artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: db-migration-script
         path: '${{github.workspace}}/artifacts'
@@ -146,3 +146,4 @@ jobs:
  
     - name: Run SQL migration
       run: Write-Output "Running SQL migration against target database..."
+ 
