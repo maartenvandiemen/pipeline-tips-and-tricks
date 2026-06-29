@@ -1,0 +1,128 @@
+name: 05-service-containers
+on: 
+  workflow_dispatch:
+ 
+defaults:
+  run:
+    shell: pwsh
+ 
+jobs:
+  build:
+    permissions:
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+      contents: read
+ 
+    runs-on: ubuntu-latest
+    env:
+      NUGET_PACKAGES: '${{github.workspace}}/.nuget/packages'
+ 
+    steps:
+    - uses: actions/checkout@v7
+ 
+    - name: Retrieve version
+      id: set-dotnet-version
+      run: |
+            $releasesUrl = "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json"
+            $releasesData = Invoke-RestMethod -Uri $releasesUrl -UseBasicParsing
+            $dotNet10 = $releasesData."releases-index" | Where-Object { $_."channel-version" -like "10.0" }
+            $latestNet10Sdk = $dotNet10."latest-sdk"
+            Write-Output "Latest .NET 10 SDK: $latestNet10Sdk"
+            echo "DOTNET_VERSION=$latestNet10Sdk" | Out-File -FilePath $Env:GITHUB_OUTPUT -Encoding utf8 -Append
+      shell: pwsh
+ 
+    - uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: ${{ steps.set-dotnet-version.outputs.DOTNET_VERSION }}
+ 
+    - name: Dotnet restore
+      run: dotnet restore --locked-mode --nologo
+ 
+    - name: Dotnet build
+      run: dotnet build --no-restore --configuration Release
+ 
+    - name: Restore tools
+      run: dotnet tool restore
+      working-directory: ${{github.workspace}}/TodoItems.Api
+ 
+    - name: Create idempotent SQL scripts
+      run: dotnet ef migrations script --output '${{github.workspace}}/artifacts/SQL/db.sql' --idempotent --project TodoItems.Api.csproj --context TodoDb --no-build --configuration Release
+      working-directory: ${{github.workspace}}/TodoItems.Api
+      env:
+        ASPNETCORE_ENVIRONMENT: 'DUMMY'
+ 
+    - name: Publish API
+      run: dotnet publish ${{github.workspace}}/TodoItems.Api/TodoItems.Api.csproj --configuration Release --no-build --output ${{github.workspace}}/artifacts/TodoItems.Api
+ 
+    # ── Upload artifacts ───────────────────────────────────────────────────────
+ 
+    - name: Upload API artifact
+      id: upload-api
+      uses: actions/upload-artifact@v7
+      with:
+        name: todoItemsApi
+        path: '${{github.workspace}}/artifacts/TodoItems.Api/**'
+        if-no-files-found: error
+ 
+    - name: Upload SQL migration artifact
+      id: upload-sql
+      uses: actions/upload-artifact@v7
+      with:
+        name: db-migration-script
+        path: '${{github.workspace}}/artifacts/SQL/db.sql'
+        if-no-files-found: error
+ 
+    # ── Attest artifacts ───────────────────────────────────────────────────────
+ 
+    - name: Attest API artifact
+      uses: actions/attest@v4
+      with:
+        subject-name:   todoItemsApi
+        subject-digest: ${{ steps.upload-api.outputs.artifact-digest }}
+ 
+    - name: Attest SQL migration script
+      uses: actions/attest@v4
+      with:
+        subject-name:   db-migration-script
+        subject-digest: ${{ steps.upload-sql.outputs.artifact-digest }}
+ 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+      contents: read
+ 
+    steps:
+    - name: Download API artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: todoItemsApi
+        path: '${{github.workspace}}/artifacts/TodoItems.Api'
+ 
+    - name: Download SQL migration artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: db-migration-script
+        path: '${{github.workspace}}/artifacts/SQL'
+ 
+    - name: Verify API artifact attestation
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh attestation verify '${{github.workspace}}/artifacts/TodoItems.Api' --owner ${{ github.repository_owner }}
+      shell: pwsh
+ 
+    - name: Verify SQL migration attestation
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: gh attestation verify '${{github.workspace}}/artifacts/SQL/db.sql' --owner ${{ github.repository_owner }}
+      shell: pwsh
+ 
+    - name: Deploy API
+      run: Write-Output "Deploying todoItemsApi..."
+ 
+    - name: Run SQL migration
+      run: Write-Output "Running SQL migration against target database..."

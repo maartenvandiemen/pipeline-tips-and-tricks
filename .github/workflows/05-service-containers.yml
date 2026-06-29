@@ -78,3 +78,13 @@ jobs:
       run: dotnet test --no-build --configuration Release --logger:"console;verbosity=detailed"
       env:
         integrationtests_ConnectionStrings__TodoDb: 'Server=127.0.0.1,1433;Database=TodoItemsDB;User Id=SA;Password=${{env.SA_PASSWORD}};TrustServerCertificate=true;'
+
+    - name: Publish API
+      run: dotnet publish ${{github.workspace}}/TodoItems.Api/TodoItems.Api.csproj --configuration Release --no-build --output ${{github.workspace}}/artifacts/TodoItems.Api
+
+    - name: Publish API artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: todoItemsApi
+        path: '${{github.workspace}}/artifacts/TodoItems.Api/**'
+        if-no-files-found: error
