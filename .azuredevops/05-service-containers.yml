@@ -32,7 +32,7 @@ jobs:
     value: '$(Pipeline.Workspace)/.nuget/packages/'
     readonly: true
   - name: DOTNET_VERSION 
-    value: 9
+    value: 10
     readonly: true
 
   services:
