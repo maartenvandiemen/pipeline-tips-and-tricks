@@ -1,93 +1,99 @@
 name: Parallel Steps Demo
- 
-on: 
-  workflow_dispatch:
- 
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
 jobs:
   demonstrate-parallel-steps:
     runs-on: ubuntu-latest
- 
+
     steps:
       # ─────────────────────────────────────────────
       # 1. background: true
       #    Starts a step asynchronously and moves on
-      #    immediately. Simulates a long-running
-      #    service by sleeping, then finishing.
+      #    immediately. The step gets an `id` so it
+      #    can be referenced by wait/cancel later.
       # ─────────────────────────────────────────────
       - name: Slow background task A
+        id: task-a
         background: true
         run: |
           echo "Task A: started"
           sleep 10
           echo "Task A: done"
- 
+
       - name: Slow background task B
+        id: task-b
         background: true
         run: |
           echo "Task B: started"
           sleep 8
           echo "Task B: done"
- 
+
       # ─────────────────────────────────────────────
       # 2. wait
-      #    Pauses until a specific named background
-      #    step has finished, then continues.
+      #    Pauses until specific background step(s)
+      #    finish, referenced by their `id`.
+      #    A single id is a string; multiple ids are
+      #    an array.
       # ─────────────────────────────────────────────
       - name: Wait for task B only
-        wait: Slow background task B
- 
+        wait: task-b
+
       - name: This ran as soon as B finished (not A)
         run: echo "B is done, A may still be running"
- 
+
       # ─────────────────────────────────────────────
       # 3. parallel
       #    Runs a group of steps concurrently and
       #    waits for all of them before continuing.
+      #    No name or id on the parent — bare entry.
       # ─────────────────────────────────────────────
-      - name: Three things at once
-        parallel:
+      - parallel:
           - name: Parallel task 1
             run: |
               echo "Task 1: start"
               sleep 5
               echo "Task 1: done"
- 
+
           - name: Parallel task 2
             run: |
               echo "Task 2: start"
               sleep 5
               echo "Task 2: done"
- 
+
           - name: Parallel task 3
             run: |
               echo "Task 3: start"
               sleep 5
               echo "Task 3: done"
- 
+
       # Execution only reaches here once all three
       # parallel tasks above have completed.
       - name: All parallel tasks finished
         run: echo "Tasks 1, 2 and 3 all done — took ~5s instead of ~15s"
- 
+
       # ─────────────────────────────────────────────
       # 4. wait-all
       #    Pauses until ALL still-running background
-      #    steps have completed (task A is still
-      #    running from the top of this job).
+      #    steps have completed. Takes no arguments.
       # ─────────────────────────────────────────────
       - name: Wait for everything still running
-        wait-all: true
- 
+        wait-all:
+
       - name: Confirmed all background work is done
         run: echo "Task A has now finished too"
- 
+
       # ─────────────────────────────────────────────
       # 5. cancel
       #    Start a new long-running background step,
       #    do the work that needs it, then cancel it
-      #    rather than waiting for it to finish.
+      #    by its `id` rather than waiting for it.
       # ─────────────────────────────────────────────
       - name: Infinite background task
+        id: infinite-task
         background: true
         run: |
           echo "Infinite task: started"
@@ -95,15 +101,15 @@ jobs:
             echo "Infinite task: still running..."
             sleep 3
           done
- 
+
       - name: Do work that needed the infinite task
         run: |
           echo "Doing work alongside the infinite task..."
           sleep 6
           echo "Work done"
- 
+
       - name: Cancel the infinite task
-        cancel: Infinite background task
- 
+        cancel: infinite-task
+
       - name: Pipeline completes cleanly
         run: echo "Infinite task was cancelled — job did not hang"
