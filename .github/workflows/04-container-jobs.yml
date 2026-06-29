@@ -9,12 +9,12 @@ defaults:
 
 jobs:
   build:
-    container: mcr.microsoft.com/dotnet/sdk:9.0
-    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/dotnet/sdk:10.0
+    runs-on: ubuntu-latest
     env:
       NUGET_PACKAGES: '${{github.workspace}}/.nuget/packages'
     steps:    
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Dotnet restore
       run: dotnet restore --locked-mode --nologo

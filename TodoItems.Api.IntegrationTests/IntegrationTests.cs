@@ -1,4 +1,3 @@
-using DotNet.Testcontainers.Builders;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,8 +17,7 @@ namespace TodoItems.Api.IntegrationTests
         [TestInitialize]
         public void TestInitialize()
         {
-            _sqlContainer = new MsSqlBuilder()
-                .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+            _sqlContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2025-latest")
                 //Will remove the image automatically after all tests have been run.
                 .WithCleanUp(true)
                 .Build();            
@@ -44,7 +42,7 @@ namespace TodoItems.Api.IntegrationTests
 
                 //Assert
                 Assert.IsNotNull(todoItems);
-                Assert.AreEqual(0, todoItems.Count);
+                Assert.IsEmpty(todoItems);
             }
             finally
             {
@@ -80,7 +78,7 @@ namespace TodoItems.Api.IntegrationTests
 
                 //Assert
                 Assert.IsNotNull(todoItems);
-                Assert.AreEqual(2, todoItems.Count);
+                Assert.HasCount(2, todoItems);
             }
             finally
             {

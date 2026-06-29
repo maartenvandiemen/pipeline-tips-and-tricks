@@ -1,0 +1,48 @@
+name: 07-variable-passing
+
+trigger: none  # Equivalent to workflow_dispatch (manual only)
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: DetermineVariables
+    displayName: Determine Variables
+    jobs:
+      - job: SetupNuget
+        displayName: Setup NuGet
+        steps:
+          - pwsh: |
+              $nugetPath = "$(Build.SourcesDirectory)/.nuget/packagezzz"
+              Write-Host "##vso[task.setvariable variable=NUGET;isOutput=true]$nugetPath"
+            name: setupNuget
+            displayName: Setup NuGet Path
+
+  - stage: Build
+    displayName: Build
+    dependsOn: DetermineVariables
+    variables:
+      NUGET_PACKAGES: $[ stageDependencies.DetermineVariables.SetupNuget.outputs['setupNuget.NUGET'] ]
+    jobs:
+      - job: Build
+        displayName: Build .NET Project
+        steps:
+          - checkout: self
+          - pwsh: Write-Host $(NUGET_PACKAGES)
+          - task: UseDotNet@2
+            displayName: Setup .NET SDK
+            inputs:
+              version: 10.x
+              quality: ga
+
+          - task: Cache@2
+            displayName: Restore NuGet Cache
+            inputs:
+              key: '$(Agent.OS) | **/packages.lock.json,!**/bin/**,!**/obj/**'
+              path: $(NUGET_PACKAGES)
+
+          - pwsh: dotnet restore --locked-mode --nologo
+            displayName: Dotnet Restore
+
+          - pwsh: dotnet build --no-restore --configuration Release
+            displayName: Dotnet Build

@@ -1,0 +1,10 @@
+parameters:
+- name: buildConfiguration
+  type: string
+  default: 'Release'
+
+steps:
+- bash: echo $(buildconfiguration)
+  name: Print1
+- bash: echo ${{ parameters.buildconfiguration }}
+  name: Print2

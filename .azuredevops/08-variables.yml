@@ -1,0 +1,20 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+- name: one
+  value: initialValue 
+- name: patch
+  value: $[counter(variables['build.reason'], 0)]
+
+jobs:
+  - job: job1
+    steps:
+      - checkout: none
+      - script: echo $(patch)
+      - script: |
+          echo ${{ variables.one }} #outputs initialValue
+          echo $(one)
+        displayName: Variable pass
