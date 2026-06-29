@@ -112,7 +112,7 @@ jobs:
     - name: Verify API artifact attestation
       env:
         GH_TOKEN: ${{ github.token }}
-      run: gh attestation verify '${{github.workspace}}/artifacts/TodoItems.Api' --owner ${{ github.repository_owner }}
+      run: gh attestation verify '${{github.workspace}}/artifacts/TodoItems.Api/todoItemsApi.zip' --owner ${{ github.repository_owner }}
       shell: pwsh
  
     - name: Verify SQL migration attestation
