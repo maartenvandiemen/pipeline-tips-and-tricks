@@ -32,7 +32,7 @@ jobs:
               $latestNet10Sdk = $dotNet10."latest-sdk"
 
               # Output the latest information about .NET 10
-              Write-Output "Latest .NET 10 SDK: $latestNet9Sdk"
+              Write-Output "Latest .NET 10 SDK: $latestNet10Sdk"
               Write-Host "##vso[task.setvariable variable=DOTNET_VERSION;]$latestNet10Sdk"
 
   - task: Cache@2
